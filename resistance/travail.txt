@@ -1,0 +1,138 @@
+    val morse=Vector(".-", "-...", "-.-.", "-..",
+                ".", "..-.", "--.", "....",
+                "..", ".---", "-.-", ".-..",
+                "--", "-.", "---", ".--.",
+                "--.-", ".-.", "...", "-",
+                "..-", "...-", ".--", "-..-",
+                "-.--", "--..")
+				
+				
+firstLetter(example) map { case (a,b)=>firstLetter(b) }
+
+
+Vector(
+Vector((BA,-.-.), (BE,--.-.), (BP, -.), (BW,.-.)), 
+Vector((DE,.--.-.), (DI,--.-.), (DU,-.-.)), 
+Vector((NE,..--.-.), (NI,.--.-.), (NS,--.-.), (NV,-.-.)), 
+Vector((TE,...--.-.), (TH,--.-.), (TI,..--.-.), (TS,.--.-.)))
+
+flatten ==>
+
+Vector((BA,-.-.), (BE,--.-.), (BP,-.), (BW,.-.), (DE,.--.-.), (DI,--.-.), (DU,-.-.),
+ (NE,..--.-.), (NI,.--.-.), (NS,--.-.), (NV,-.-.), (TE,...--.-.), (TH,--.-.), (TI,..--.-.), (TS,.--.-.))
+ 
+def continue(in:String) = word("",in) flatMap { case (a,b)=>word(a, b) }
+
+ 
+def recContinue(in:String) = recContinue("",in) flatMap { case (a,b)=>word(a, b) }
+
+
+
+Test sans récursivité
+def word(current:String="", in:String):Seq[(String,String)]=
+    for (i <- 0 until morse.size if in startsWith morse(i))
+        yield (current + (i+65).toChar, in.substring(morse(i).size) )
+		
+Réessai de récursivité:
+-----------------------
+
+def word(current:String="", in:String):Seq[(String,String)]={
+    val found = for (i <- 0 until morse.size if in startsWith morse(i))
+        yield  (current + (i+65).toChar, in.substring(morse(i).size) );
+	return found;
+	}
+		
+def read(sentence:String, currentW:String="", in:String):Seq[(String, String,String)]={
+ print("read avec "+currentW)
+  in match {
+   case ""=> List( (sentence, currentW, "") )
+   case _=>
+    var found = for (i <- 0 until morse.size if in startsWith morse(i))
+     yield  (sentence, currentW + (i+65).toChar, in.substring(morse(i).size) );
+
+    println("==> "+ (found map { case (a,b,c) => b }))
+    if (dico contains currentW) {
+     found = found :+ (sentence+" "+currentW, "", in)
+     print("mot="+currentW)
+    }
+    //println("currentW="+currentW+" on a trouve "+found)
+    return (found collect { case (s,a,b) if dico exists (m=>m.startsWith(a)) =>read(s, a, b) }).flatten;
+  }
+}
+
+def word(in:String)={
+ val possibilities=read("", in)
+ possibilities map { case (a:String,b:String)=>a }
+}	
+
+def word(current:String="", in:String):[(String,String)]=    for (i <- 0 until morse.size if in startsWith morse(i))        yield word( current + (i+65).toChar, in.substring(morse(i).size) )
+
+
+
+
+
+
+
+
+
+Méthjode qui marche mais trop lente
+
+def read(sentence:String, currentW:String="", in:String):Seq[(String, String,String)]={
+ //Console.err.println("read avec "+in)
+  in match {
+   case ""=> List( (sentence, currentW, "") )
+   case _=>
+    var found = for (i <- 0 until morse.size if in startsWith morse(i))
+     yield  (sentence, currentW + (i+65).toChar, in.substring(morse(i).size) );
+
+    if (dico contains currentW) {
+     found = found :+ (sentence+" "+currentW, "", in)
+     Console.err.println("phrase="+sentence+" "+currentW)
+    }
+    //Console.err.println("currentW="+currentW+" on a trouve "+found)
+    return (found collect { case (s,a,b) if dico exists (m=>m.startsWith(a)) =>read(s, a, b) }).flatten;
+  }
+}
+
+val dicoProgressifSeq = for (word <- dico; i <- 1 to word.size)
+yield word.substring(0,i)
+
+
+
+Avec optim: (mais ne marche plus)
+def read(sentence:String, currentW:String="", in:String):Seq[(String, String,String)]={
+ //Console.err.println("read avec "+in)
+  in match {
+   case ""=> List( (sentence, currentW, "") )
+   case _=>
+    var found = for (i <- 0 until morse.size if in startsWith morse(i))
+     yield  (sentence, currentW + (i+65).toChar, in.substring(morse(i).size) );
+    
+    if (dico contains currentW ) {
+     found = found :+ (sentence+" "+currentW, "", in)
+     Console.err.println("phrase="+sentence+" "+currentW)
+    }
+    //Console.err.println("currentW="+currentW+" on a trouve "+found)
+    return (found collect { case (s,a,b) if dicoProgressif contains a =>read(s, a, b) }).flatten;
+  }
+}
+
+Avec optim ET qui marche ! (mais pas encore assez rapide :( )
+
+def read(sentence:String, currentW:String="", in:String):Seq[(String, String,String)]={
+ //Console.err.println("read avec "+in)
+  in match {
+   case ""=> List( (sentence, currentW, "") )
+   case _=>
+    var found = for (i <- 0 until morse.size if in startsWith morse(i))
+     yield  (sentence, currentW + (i+65).toChar, in.substring(morse(i).size) );
+    
+    if (dico contains currentW ) {
+     found = found :+ (sentence+" "+currentW, "", in)
+     //Console.err.println("phrase="+sentence+" "+currentW)
+    }
+    //Console.err.println("currentW="+currentW+" on a trouve "+found)
+    return (found collect { case (s,a,b) if a.size == 0 || (dicoProgressif contains a) =>read(s, a, b) }).flatten;
+//    return (found collect { case (s,a,b) if dico exists (m=>m.startsWith(a)) =>read(s, a, b) }).flatten;
+  }
+}
